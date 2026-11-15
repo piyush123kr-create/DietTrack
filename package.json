@@ -1,0 +1,8 @@
+{
+  "name": "macro-tracker",
+  "version": "1.0.0",
+  "description": "Indian-food protein, carb and calorie tracker (single-file web app)",
+  "scripts": { "test": "node --test" },
+  "devDependencies": { "jsdom": "^27.0.0" },
+  "license": "MIT"
+}
