@@ -11,6 +11,9 @@ A single-file web app (`index.html`) to track daily protein, carbs and calories 
 - Health report tab: day score, vitals, focus for tomorrow, 7-day trend and an optional AI summary
 - Optional AI suggestions and per-user accounts (see below)
 
+## Accounts
+Email + password sign-up and login via Supabase. See `SUPABASE_SETUP.md` (free, about 10 minutes).
+
 ## Run
 Open `index.html` in a browser. Data is stored in `localStorage`.
 

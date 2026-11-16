@@ -2,12 +2,14 @@
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Protein &amp; Carb Tracker</title>
+<script>/* Fill in after creating your Supabase project (see SUPABASE_SETUP.md). Leave blank to run without accounts. */
+window.APP_CONFIG=window.APP_CONFIG||{supabaseUrl:"",supabaseKey:"",allowGuest:false};</script>
 <style>
 :root{--bg:#fff;--card:#fff;--tx:#1a1a1a;--mu:#6e6e73;--bd:#ececec;--soft:#f6f7f9;--pr:#16a37f;--ca:#f08c1a;--ka:#5b6cf0;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
-main{max-width:640px;margin:0 auto;padding:14px 14px 90px}
+main{max-width:640px;margin:0 auto;padding:84px 14px 90px}
 h1{font-size:22px;margin:4px 0 8px}h2{font-size:15px;margin:0 0 10px}h2.sec{margin:16px 2px 8px}
 small,.mu{color:var(--mu);font-size:12px}small{display:block}
 .card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:14px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
@@ -36,7 +38,7 @@ button.p{background:var(--pr);border-color:var(--pr);color:#fff;font-weight:600}
 .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}.chip{border-radius:16px;padding:6px 11px;font-size:13px}
 .bk{border:0;background:none;color:var(--pr);padding:0;margin-bottom:6px;font-weight:600}
 a.btn{display:block;text-align:center;text-decoration:none;padding:12px;border-radius:10px;background:var(--pr);color:#fff;font-weight:600}
-nav{position:fixed;left:0;right:0;bottom:0;display:flex;background:#fff;border-top:1px solid var(--bd);padding:6px 8px calc(6px + env(safe-area-inset-bottom,0px))}
+nav{position:fixed;left:0;right:0;top:0;z-index:5;display:flex;background:#fff;border-bottom:1px solid var(--bd);padding:calc(6px + env(safe-area-inset-top,0px)) 8px 6px}
 nav button{flex:1;border:0;background:none;color:var(--mu);font-size:12px;padding:6px}nav button.on{color:var(--pr);font-weight:700}
 nav button b{display:block;font-size:18px}
 </style></head>
@@ -65,7 +67,7 @@ S.days=S.days||{};
 const save=()=>{try{localStorage.setItem('nt2',JSON.stringify(S))}catch(e){}push()};
 let ACC={s:'local',name:''},cloud=null,pt=0,FL='';
 const push=()=>{if(ACC.s!=='cloud'||!cloud)return;clearTimeout(pt);pt=setTimeout(async()=>{try{await cloud.ref.set({json:JSON.stringify(S)});ACC.sync='ok'}catch(e){ACC.sync='failed'}if(P==='targets')render()},800)};
-const accCard=()=>`<section class="card"><h2>Account</h2>${ACC.s==='cloud'?`<b>${esc(ACC.name||'Signed in')}</b><small>Signed in with your claude.ai account. Your meals, targets, weight and BP sync privately to this account on every device${ACC.sync==='failed'?' (last sync failed; it will retry on your next change)':''}.</small>`:`<b>Not signed in</b><small>${ACC.err?'Couldn’t reach your account.':'Open this page while signed in to claude.ai to get your own private account.'} Your data is saved on this device only.</small>`}</section>`;
+const accCard=()=>`<section class="card"><h2>Account</h2>${ACC.s==='cloud'?`<b>${esc(ACC.name||'Signed in')}</b><small>${SB?'Signed in.':'Signed in with your claude.ai account.'} Your meals, targets, weight and BP sync privately to this account on every device${ACC.sync==='failed'?' (last sync failed; it will retry on your next change)':''}.</small>${SB?'<button style="margin-top:8px" data-a="sbout">Sign out</button>':''}`:`<b>Not signed in</b><small>${ACC.err?'Couldn’t reach your account.':'Open this page while signed in to claude.ai to get your own private account.'} Your data is saved on this device only.</small>`}</section>`;
 const D=()=>S.days[S.date]||(S.days[S.date]={m:{b:[],l:[],s:[],d:[],f:[]}});
 const has=k=>{const d=S.days[k];return d&&(d.w||d.sys||Object.values(d.m).some(a=>a.length))};
 const ok=t=>S.diet==='n'||t==='v'||(S.diet==='e'&&t==='e');
@@ -192,6 +194,9 @@ document.addEventListener('click',e=>{
  else if(a==='stadd'){const d=D();d.st=Math.max(0,(+d.st||0)+(+b.dataset.v))}
  else if(a==='stauto'){toggleAuto();return}
  else if(a==='airep'){aiReport();return}
+ else if(a==='sbgo'){sbGo();return}
+ else if(a==='sbm'){SBM=b.dataset.v;SBMSG=''}
+ else if(a==='sbout'){sbOut();return}
  else if(a==='mode'){CF.mode=b.dataset.v;CF.q=CF.mode==='g'?'':1;CF.warned=0;EST='';if(CM.some(z=>z[0].toLowerCase()===CF.n.trim().toLowerCase()))autofill();else{CF.p='';CF.c='';CF.k='';if(CF.mode==='n'&&CF.u==='g')CF.u=''}}
  else if(a==='cust'){if(!CF.n.trim()){$('#cn').focus();return}
   if(CF.mode==='g'&&!(+CF.q>0)){EST='Enter how many grams you ate.';render();return}
@@ -202,7 +207,53 @@ document.addEventListener('click',e=>{
  else if(a==='hsave'){const d=D();d.w=$('#hw').value;d.sys=$('#hs').value;d.dia=$('#hd').value;FL='Weight & BP saved';P='home';scrollTo(0,0);setTimeout(()=>{FL='';if(P==='home')render()},3000)}
  save();render();
 });
+const CFG=Object.assign({supabaseUrl:'',supabaseKey:'',allowGuest:false},window.APP_CONFIG||{});
+const SBON=()=>!!(CFG.supabaseUrl&&CFG.supabaseKey);
+let SB=null,SBM='in',SBF={em:'',pw:''},SBMSG='',SBBUSY=0;
+async function sbFetch(path,opt,tok){opt=opt||{};
+ const r=await fetch(CFG.supabaseUrl+path,{...opt,headers:{apikey:CFG.supabaseKey,Authorization:'Bearer '+(tok||CFG.supabaseKey),'Content-Type':'application/json',...(opt.headers||{})}});
+ let j=null;try{j=await r.json()}catch(e){}
+ if(!r.ok)throw Object.assign(new Error((j&&(j.msg||j.error_description||j.message||j.error))||'Request failed'),{status:r.status});return j}
+function sbSave(j){SB=j&&j.access_token?{access_token:j.access_token,refresh_token:j.refresh_token,exp:Date.now()+(j.expires_in||3600)*1000-60000,user:{id:j.user.id,email:j.user.email}}:null;
+ try{SB?localStorage.setItem('nt2auth',JSON.stringify(SB)):localStorage.removeItem('nt2auth')}catch(e){}}
+async function sbTok(){if(!SB)throw new Error('Signed out');
+ if(Date.now()>SB.exp)sbSave(await sbFetch('/auth/v1/token?grant_type=refresh_token',{method:'POST',body:JSON.stringify({refresh_token:SB.refresh_token})}));
+ return SB.access_token}
+const sbRef={
+ async get(){const t=await sbTok(),r=await sbFetch('/rest/v1/tracker_data?select=json&user_id=eq.'+SB.user.id,{},t);return{exists:!!(r&&r[0]),data:()=>({json:r&&r[0]&&r[0].json})}},
+ async set(d){const t=await sbTok();await sbFetch('/rest/v1/tracker_data?on_conflict=user_id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({user_id:SB.user.id,json:d.json,updated_at:new Date().toISOString()})},t)}};
+async function sbAuth(kind,email,pw){
+ if(kind==='up'){const j=await sbFetch('/auth/v1/signup',{method:'POST',body:JSON.stringify({email,password:pw})});if(j&&j.access_token){sbSave(j);return'in'}return'confirm'}
+ if(kind==='in'){sbSave(await sbFetch('/auth/v1/token?grant_type=password',{method:'POST',body:JSON.stringify({email,password:pw})}));return'in'}
+ await sbFetch('/auth/v1/recover',{method:'POST',body:JSON.stringify({email})});return'reset'}
+async function adopt(id,name,ref){cloud={ref};ACC.name=name;
+ const snap=await ref.get(),dflt={tp:100,tc:250,tk:2000,diet:'v',pref:''};
+ if(S.uid&&S.uid!==id)S=Object.assign({},dflt,{date:td(),days:{}});
+ if(snap.exists&&snap.data()&&snap.data().json){S=Object.assign({},dflt,JSON.parse(snap.data().json),{date:td()});S.days=S.days||{}}
+ S.uid=id;ACC.s='cloud';save()}
+async function sbGo(){
+ const em=SBF.em.trim(),pw=SBF.pw;SBMSG='';
+ if(!/^\S+@\S+\.\S+$/.test(em))SBMSG='Enter a valid email address.';
+ else if(SBM!=='rs'&&pw.length<6)SBMSG='Password must be at least 6 characters.';
+ if(SBMSG){render();return}
+ SBBUSY=1;render();
+ try{const r=await sbAuth(SBM,em,pw);
+  if(r==='in'){await adopt(SB.user.id,SB.user.email,sbRef);P='home';SBF.pw=''}
+  else if(r==='confirm'){SBMSG='Account created. Check your email to confirm it, then sign in.';SBM='in'}
+  else SBMSG='If that email has an account, a reset link is on its way.'}
+ catch(e){SBMSG=/invalid login/i.test(e.message)?'Wrong email or password.':(e.status?e.message:'Couldn’t reach the server. Check your connection and try again.')}
+ SBBUSY=0;render()}
+async function sbOut(){try{if(SB)await sbFetch('/auth/v1/logout',{method:'POST'},SB.access_token)}catch(e){}
+ sbSave(null);cloud=null;ACC={s:'local',name:''};try{localStorage.removeItem('nt2')}catch(e){}
+ S=load();S.days=S.days||{};SBF={em:'',pw:''};SBM='in';SBMSG='';P='login';render()}
+async function sbBoot(){
+ try{const raw=localStorage.getItem('nt2auth');if(raw){SB=JSON.parse(raw);await sbTok();await adopt(SB.user.id,SB.user.email,sbRef)}}
+ catch(e){if(e.status===400||e.status===401||e.status===403)sbSave(null);ACC.s='local'}
+ finally{if(P==='boot')P=ACC.s==='cloud'?'home':'login';render()}}
+function sbLogin(){const t={in:'Sign in',up:'Create account',rs:'Send reset link'}[SBM];
+ return `<h1 style="margin-top:24px">${SBM==='up'?'Create your account':SBM==='rs'?'Reset password':'Welcome back'}</h1><p class="mu">Your meals, water, steps and health data stay private to your account and sync across your devices.</p><section class="card"><label class="f">Email<input id="em" type="email" autocomplete="email" value="${esc(SBF.em)}"></label>${SBM==='rs'?'':`<label class="f">Password<input id="pw" type="password" autocomplete="${SBM==='up'?'new-password':'current-password'}" value="${esc(SBF.pw)}" placeholder="At least 6 characters"></label>`}${SBMSG?`<small style="margin:0 0 10px;color:var(--tx)">${esc(SBMSG)}</small>`:''}<button class="p" style="width:100%" data-a="sbgo" ${SBBUSY?'disabled':''}>${SBBUSY?'Please wait…':t}</button><div style="display:flex;justify-content:space-between;margin-top:10px">${SBM==='in'?'<button class="bk" data-a="sbm" data-v="up">Create account</button><button class="bk" data-a="sbm" data-v="rs">Forgot password?</button>':'<button class="bk" data-a="sbm" data-v="in">Back to sign in</button>'}</div></section>${CFG.allowGuest?'<button style="width:100%" data-a="guest">Continue on this device only</button>':''}`}
 if(window.claude&&claude.use&&!S.guest){P='boot';setTimeout(()=>{if(P==='boot'){P='login';render()}},5000)}
+else if(SBON()&&!(S.guest&&CFG.allowGuest)){P='boot';setTimeout(()=>{if(P==='boot'){P='login';render()}},8000)}
 let AIR={},AIRS='',AUTO=null,AUTOM='';
 const WG=()=>S.wg||2500,SG=()=>S.sg||8000;
 const emptyDay=()=>({m:{b:[],l:[],s:[],d:[],f:[]}});
@@ -280,7 +331,7 @@ const pv=()=>{const{q,p,c,k}=cv();return `Total for ${CF.mode==='g'?q+' g':q+' �
 function autofill(){const x=CM.find(z=>z[0].toLowerCase()===CF.n.trim().toLowerCase());if(!x)return;const g=CF.mode==='g',w=g?100/(GPU[x[0]]||100):1;Object.assign(CF,{u:g?'g':x[1],p:f(x[2]*w),c:f(x[3]*w),k:ki(x[4]*w)});if(g&&CF.q==='')CF.q=GPU[x[0]]||'';[['#cu',CF.u],['#cq',CF.q],['#cp',CF.p],['#cc',CF.c],['#ck',CF.k]].forEach(([s,v])=>{const e=$(s);if(e)e.value=v});EST=''}
 async function est(){if(!sample||!CF.n.trim())return;EST='...';render();
  try{const v=await sample.json(`Estimate nutrition for ${CF.mode==='g'?'100 g':'1 '+(CF.u||'serving')} of "${CF.n}" (Indian home-style). Reply with ONLY JSON: {"p":grams of protein,"c":grams of carbs,"k":kcal}`);CF.p=f(+v.p||0);CF.c=f(+v.c||0);CF.k=ki(+v.k||0);EST='Estimated by AI. Edit if needed.'}catch(e){EST='Couldn’t estimate. Try again.'}render()}
-document.addEventListener('input',e=>{const k=MAP[e.target.id];if(!k)return;CF[k]=e.target.value;CF.warned=0;if(k==='n')autofill();const v=$('#pv');if(v)v.textContent=pv()});
+document.addEventListener('input',e=>{if(e.target.id==='em'||e.target.id==='pw'){SBF[e.target.id]=e.target.value;return}const k=MAP[e.target.id];if(!k)return;CF[k]=e.target.value;CF.warned=0;if(k==='n')autofill();const v=$('#pv');if(v)v.textContent=pv()});
 document.addEventListener('change',e=>{
  const t=e.target,id=t.id;
  if(id==='dt'&&t.value)S.date=t.value;
@@ -294,7 +345,7 @@ document.addEventListener('change',e=>{
 });
 render();
 const ART='https://claude.ai/artifact/QMPK87KmdkYDiENkYAmX1M';
-function login(){return `<h1 style="margin-top:24px">Welcome</h1><p class="mu">Sign in with your claude.ai account to keep your meals, weight and BP private and synced on every device.</p><section class="card"><a class="btn" href="${ART}" target="_blank" rel="noopener">Sign in with Claude</a><small style="margin:8px 0 12px">Signed in already? Reload this page, or <button class="bk" style="margin:0" data-a="retry">check again</button>.</small><button style="width:100%" data-a="guest">Continue on this device only</button></section><small>Without signing in, your data stays in this browser.</small>`}
+function login(){if(SBON())return sbLogin();return `<h1 style="margin-top:24px">Welcome</h1><p class="mu">Sign in with your claude.ai account to keep your meals, weight and BP private and synced on every device.</p><section class="card"><a class="btn" href="${ART}" target="_blank" rel="noopener">Sign in with Claude</a><small style="margin:8px 0 12px">Signed in already? Reload this page, or <button class="bk" style="margin:0" data-a="retry">check again</button>.</small><button style="width:100%" data-a="guest">Continue on this device only</button></section><small>Without signing in, your data stays in this browser.</small>`}
 async function account(){
  try{const[u,d]=await Promise.all([claude.use('user'),claude.use('db')]);if(!u||!d)return;
   const id=await u.id();if(!id)return;const me=await u.me();ACC.name=(me&&me.name)||'';
@@ -308,4 +359,5 @@ async function account(){
 }
 (async()=>{try{if(window.claude&&claude.use){sample=await claude.use('sample');if(sample)render()}}catch(e){}})();
 (async()=>{try{if(window.claude&&claude.use)await account()}catch(e){}})();
+if(!(window.claude&&claude.use)&&SBON()&&P==='boot')sbBoot();
 </script></body></html>

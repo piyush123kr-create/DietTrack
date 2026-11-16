@@ -526,3 +526,113 @@ describe('7d. Health report page and AI summary', () => {
     const day = Object.values(sets.at(-1).days).find(d => d.wa); assert.equal(day.wa, 500); assert.equal(day.st, 3000);
   });
 });
+
+// ---- 8. Own-site accounts (Supabase email + password) with a fake Supabase server ----
+function fakeSB({ confirm = false, netdown = false } = {}) {
+  const users = {}, tokens = {}, refresh = {}, rows = {}, calls = []; let n = 0;
+  const mk = u => { const at = 'at' + (++n), rt = 'rt' + n; tokens[at] = u.id; refresh[rt] = u.id; return { access_token: at, refresh_token: rt, expires_in: 3600, user: { id: u.id, email: u.email } }; };
+  const res = (status, body) => ({ ok: status < 400, status, json: async () => { if (body === undefined) throw new Error('no body'); return body; } });
+  const srv = { users, tokens, refresh, rows, calls, mk, down: netdown, confirm };
+  srv.fetch = async (url, opt = {}) => {
+    if (srv.down) throw new TypeError('Failed to fetch');
+    const u = new URL(url), h = opt.headers || {}, body = opt.body ? JSON.parse(opt.body) : null, p = u.pathname, m = opt.method || 'GET';
+    calls.push({ path: p + u.search, method: m, h, body });
+    if (h.apikey !== 'anon-key') return res(401, { message: 'No API key' });
+    if (p === '/auth/v1/signup') { if (users[body.email]) return res(422, { msg: 'User already registered' }); const usr = { id: 'id-' + body.email, email: body.email, pw: body.password, ok: !srv.confirm }; users[body.email] = usr; return res(200, srv.confirm ? { id: usr.id, email: usr.email } : mk(usr)); }
+    if (p === '/auth/v1/token') {
+      const g = u.searchParams.get('grant_type');
+      if (g === 'password') { const usr = users[body.email]; if (!usr || usr.pw !== body.password) return res(400, { error_description: 'Invalid login credentials' }); if (!usr.ok) return res(400, { error_description: 'Email not confirmed' }); return res(200, mk(usr)); }
+      if (g === 'refresh_token') { const id = refresh[body.refresh_token]; if (!id) return res(400, { error_description: 'Invalid Refresh Token' }); delete refresh[body.refresh_token]; return res(200, mk(Object.values(users).find(x => x.id === id))); }
+    }
+    if (p === '/auth/v1/recover') return res(200, {});
+    if (p === '/auth/v1/logout') { delete tokens[(h.Authorization || '').slice(7)]; return res(204); }
+    if (p.startsWith('/rest/v1/tracker_data')) {
+      const uid = tokens[(h.Authorization || '').slice(7)]; if (!uid) return res(401, { message: 'JWT expired' });
+      if (m === 'GET') return res(200, rows[uid] ? [{ json: rows[uid] }] : []); // row-level security: caller's own row only
+      if (body.user_id !== uid) return res(403, { message: 'violates row-level security policy' }); rows[uid] = body.json; return res(201);
+    }
+    return res(404, { message: 'not found' });
+  };
+  return srv;
+}
+const cfgBoot = (srv, { store, auth, allowGuest } = {}) => boot(store, null, w => {
+  w.APP_CONFIG = { supabaseUrl: 'https://x.supabase.co', supabaseKey: 'anon-key', allowGuest: !!allowGuest }; w.fetch = srv.fetch;
+  if (auth) w.localStorage.setItem('nt2auth', JSON.stringify(auth));
+});
+const signIn = async (w, em, pw, mode) => { if (mode) click(w, `[data-a="sbm"][data-v="${mode}"]`); type(w, 'em', em); if (pw != null) type(w, 'pw', pw); click(w, '[data-a="sbgo"]'); await wait(40); };
+
+describe('8. Accounts on your own site (Supabase)', () => {
+  test('login form is shown first; tabs hidden; no guest option by default', async () => {
+    const w = cfgBoot(fakeSB()); await wait(30);
+    assert.equal(ev(w, 'P'), 'login'); assert.ok($(w, '#em') && $(w, '#pw')); assert.equal($(w, '#nav').style.display, 'none'); assert.equal($(w, '[data-a="guest"]'), null); assert.deepEqual(w.errors, []);
+  });
+  test('tab bar is at the top, not the bottom (clear of hosting badges)', () => {
+    const rule = html.match(/nav\{position:fixed[^}]*\}/)[0]; assert.ok(rule.includes('top:0') && !rule.includes('bottom:0'), rule);
+  });
+  test('validation: bad email / short password never reach the server', async () => {
+    const srv = fakeSB(), w = cfgBoot(srv); await wait(30);
+    await signIn(w, 'not-an-email', '123456'); assert.match($(w, '#app').textContent, /valid email/);
+    await signIn(w, 'a@x.com', '123'); assert.match($(w, '#app').textContent, /at least 6 characters/); assert.equal(srv.calls.length, 0);
+  });
+  test('sign up → signed in, greeted, data row created for that user', async () => {
+    const srv = fakeSB(), w = cfgBoot(srv); await wait(30); await signIn(w, 'asha@x.com', 'secret1', 'up');
+    assert.equal(ev(w, 'P'), 'home'); assert.match($(w, '#app').textContent, /Hi, asha@x\.com/); assert.equal($(w, '#nav').style.display, '');
+    await wait(1000); assert.ok(srv.rows['id-asha@x.com'], 'row saved'); assert.equal(JSON.parse(srv.rows['id-asha@x.com']).uid, 'id-asha@x.com');
+  });
+  test('sign up when email confirmation is required: asks to confirm, blocks sign-in until then', async () => {
+    const srv = fakeSB({ confirm: true }), w = cfgBoot(srv); await wait(30); await signIn(w, 'b@x.com', 'secret1', 'up');
+    assert.equal(ev(w, 'P'), 'login'); assert.match($(w, '#app').textContent, /Check your email to confirm/);
+    await signIn(w, 'b@x.com', 'secret1'); assert.match($(w, '#app').textContent, /Email not confirmed/); assert.equal(ev(w, 'P'), 'login');
+  });
+  test('duplicate sign-up and wrong password show clear messages', async () => {
+    const srv = fakeSB(), w = cfgBoot(srv); await wait(30); await signIn(w, 'c@x.com', 'secret1', 'up'); click(w, 'nav [data-p="targets"]'); click(w, '[data-a="sbout"]'); await wait(20);
+    await signIn(w, 'c@x.com', 'secret1', 'up'); assert.match($(w, '#app').textContent, /already registered/);
+    await signIn(w, 'c@x.com', 'wrong-pass', 'in'); assert.match($(w, '#app').textContent, /Wrong email or password\./);
+    await signIn(w, 'nobody@x.com', 'secret1'); assert.match($(w, '#app').textContent, /Wrong email or password\./); assert.equal(ev(w, 'P'), 'login');
+  });
+  test('sign in loads your saved data from the server', async () => {
+    const srv = fakeSB(); srv.users['d@x.com'] = { id: 'id-d', email: 'd@x.com', pw: 'secret1', ok: true };
+    srv.rows['id-d'] = JSON.stringify({ tp: 140, tc: 220, tk: 2100, diet: 'e', pref: '', days: { '2026-11-01': { m: { b: [], l: [], s: [], d: [], f: [] }, w: '70' } } });
+    const w = cfgBoot(srv); await wait(30); await signIn(w, 'd@x.com', 'secret1');
+    assert.equal(ev(w, 'S.tp'), 140); assert.equal(ev(w, 'S.days["2026-11-01"].w'), '70'); assert.equal(ev(w, 'S.date'), ev(w, 'td()'));
+  });
+  test('changes sync to the server and show up on a second device', async () => {
+    const srv = fakeSB(), w = cfgBoot(srv); await wait(30); await signIn(w, 'e@x.com', 'secret1', 'up');
+    click(w, '[data-a="wat"][data-v="500"]'); type(w, 'stv', '4200'); click(w, '[data-a="stsave"]'); await wait(1100);
+    const w2 = cfgBoot(srv, { auth: JSON.parse(w.localStorage.getItem('nt2auth')) }); await wait(60);
+    assert.equal(ev(w2, 'P'), 'home'); assert.equal(ev(w2, 'D().wa'), 500); assert.equal(ev(w2, 'D().st'), 4200);
+  });
+  test('session persists across reloads; expired token is refreshed; invalid session returns to login', async () => {
+    const srv = fakeSB(), w = cfgBoot(srv); await wait(30); await signIn(w, 'f@x.com', 'secret1', 'up'); const auth = JSON.parse(w.localStorage.getItem('nt2auth'));
+    const w2 = cfgBoot(srv, { auth }); await wait(60); assert.equal(ev(w2, 'P'), 'home'); assert.ok(!srv.calls.some(c => c.path.includes('grant_type=password') && c.body && c.body.email === 'f@x.com' && srv.calls.indexOf(c) > 3), 'no re-login');
+    const n0 = srv.calls.filter(c => c.path.includes('refresh_token')).length; const exp = { ...JSON.parse(w2.localStorage.getItem('nt2auth')), exp: Date.now() - 1000 };
+    const w3 = cfgBoot(srv, { auth: exp }); await wait(80); assert.equal(ev(w3, 'P'), 'home'); assert.equal(srv.calls.filter(c => c.path.includes('refresh_token')).length, n0 + 1);
+    const w4 = cfgBoot(srv, { auth: { ...exp, refresh_token: 'dead' } }); await wait(80); assert.equal(ev(w4, 'P'), 'login'); assert.equal(w4.localStorage.getItem('nt2auth'), null);
+  });
+  test('sign out clears the session and local data; the next person does not see it', async () => {
+    const srv = fakeSB(), w = cfgBoot(srv); await wait(30); await signIn(w, 'g@x.com', 'secret1', 'up'); click(w, '[data-a="wat"][data-v="500"]'); click(w, '[data-a="wat"][data-v="250"]'); await wait(1000);
+    click(w, 'nav [data-p="targets"]'); assert.match($(w, '#app').textContent, /Sign out/); click(w, '[data-a="sbout"]'); await wait(30);
+    assert.equal(ev(w, 'P'), 'login'); assert.equal(w.localStorage.getItem('nt2auth'), null); assert.equal(w.localStorage.getItem('nt2'), null);
+    assert.ok(srv.calls.some(c => c.path === '/auth/v1/logout')); assert.equal(Object.keys(srv.tokens).length, 0, 'server session revoked');
+    await signIn(w, 'h@x.com', 'secret1', 'up'); assert.equal(ev(w, 'D().wa||0'), 0, 'new user starts clean'); await wait(1000);
+    assert.equal(JSON.parse(srv.rows['id-g@x.com']).days[ev(w, 'S.date')].wa, 750, 'first user data untouched'); assert.ok(!JSON.stringify(srv.rows['id-h@x.com']).includes('750'));
+  });
+  test('every data request uses your own id and your own token; password is never stored or sent to data endpoints', async () => {
+    const srv = fakeSB(), w = cfgBoot(srv); await wait(30); await signIn(w, 'i@x.com', 'Sup3rSecret!', 'up'); click(w, '[data-a="wat"][data-v="250"]'); await wait(1000);
+    const rest = srv.calls.filter(c => c.path.startsWith('/rest/v1/')); assert.ok(rest.length >= 2);
+    for (const c of rest) { assert.ok(/^Bearer at\d+$/.test(c.h.Authorization)); if (c.method === 'GET') assert.ok(c.path.endsWith('user_id=eq.id-i@x.com')); else assert.equal(c.body.user_id, 'id-i@x.com'); assert.ok(!JSON.stringify(c).includes('Sup3rSecret!')); }
+    for (let i = 0; i < w.localStorage.length; i++) assert.ok(!w.localStorage.getItem(w.localStorage.key(i)).includes('Sup3rSecret!'), 'password in storage');
+  });
+  test('forgot password sends a reset request and confirms without revealing if the email exists', async () => {
+    const srv = fakeSB(), w = cfgBoot(srv); await wait(30); await signIn(w, 'who@x.com', null, 'rs');
+    assert.match($(w, '#app').textContent, /reset link is on its way/); assert.ok(srv.calls.some(c => c.path === '/auth/v1/recover' && c.body.email === 'who@x.com'));
+  });
+  test('server down: friendly message, no crash', async () => {
+    const srv = fakeSB({ netdown: true }), w = cfgBoot(srv); await wait(30); await signIn(w, 'j@x.com', 'secret1');
+    assert.match($(w, '#app').textContent, /Couldn’t reach the server/); assert.equal(ev(w, 'P'), 'login'); assert.deepEqual(w.errors, []);
+  });
+  test('optional guest mode (allowGuest) works locally without touching the server', async () => {
+    const srv = fakeSB(), w = cfgBoot(srv, { allowGuest: true }); await wait(30); click(w, '[data-a="guest"]'); assert.equal(ev(w, 'P'), 'home');
+    click(w, '[data-a="wat"][data-v="250"]'); await wait(900); assert.equal(srv.calls.filter(c => c.path.startsWith('/rest/')).length, 0);
+  });
+});
