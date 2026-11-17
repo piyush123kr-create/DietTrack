@@ -3,7 +3,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Protein &amp; Carb Tracker</title>
 <script>/* Fill in after creating your Supabase project (see SUPABASE_SETUP.md). Leave blank to run without accounts. */
-window.APP_CONFIG=window.APP_CONFIG||{supabaseUrl:"",supabaseKey:"",allowGuest:false};</script>
+window.APP_CONFIG=window.APP_CONFIG||{supabaseUrl:"https://zcfuerfcsvwmxhspbkkj.supabase.co",supabaseKey:"sb_publishable_GhJUOL3IqZZb4ByFjwPS8Q_rGpWOs4d",allowGuest:false};</script>
 <style>
 :root{--bg:#fff;--card:#fff;--tx:#1a1a1a;--mu:#6e6e73;--bd:#ececec;--soft:#f6f7f9;--pr:#16a37f;--ca:#f08c1a;--ka:#5b6cf0;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
@@ -67,7 +67,7 @@ S.days=S.days||{};
 const save=()=>{try{localStorage.setItem('nt2',JSON.stringify(S))}catch(e){}push()};
 let ACC={s:'local',name:''},cloud=null,pt=0,FL='';
 const push=()=>{if(ACC.s!=='cloud'||!cloud)return;clearTimeout(pt);pt=setTimeout(async()=>{try{await cloud.ref.set({json:JSON.stringify(S)});ACC.sync='ok'}catch(e){ACC.sync='failed'}if(P==='targets')render()},800)};
-const accCard=()=>`<section class="card"><h2>Account</h2>${ACC.s==='cloud'?`<b>${esc(ACC.name||'Signed in')}</b><small>${SB?'Signed in.':'Signed in with your claude.ai account.'} Your meals, targets, weight and BP sync privately to this account on every device${ACC.sync==='failed'?' (last sync failed; it will retry on your next change)':''}.</small>${SB?'<button style="margin-top:8px" data-a="sbout">Sign out</button>':''}`:`<b>Not signed in</b><small>${ACC.err?'Couldn’t reach your account.':'Open this page while signed in to claude.ai to get your own private account.'} Your data is saved on this device only.</small>`}</section>`;
+const accCard=()=>`<section class="card"><h2>Account</h2>${ACC.s==='cloud'?`<b>${esc(ACC.name||'Signed in')}</b><small>${SB?'Signed in.':'Signed in with your claude.ai account.'} Your meals, targets, weight and BP sync privately to this account on every device${ACC.sync==='failed'?' (last sync failed; it will retry on your next change)':''}.</small>${SB?'<button style="margin-top:8px" data-a="sbout">Sign out</button>':''}`:`<b>Not signed in</b><small>${ACC.err?'Couldn’t reach your account.':(window.claude?'Open this page while signed in to claude.ai to get your own private account.':SBON()?'You are using guest mode.':'Sign-in isn’t switched on for this site yet.')} Your data is saved on this device only.</small>`}</section>`;
 const D=()=>S.days[S.date]||(S.days[S.date]={m:{b:[],l:[],s:[],d:[],f:[]}});
 const has=k=>{const d=S.days[k];return d&&(d.w||d.sys||Object.values(d.m).some(a=>a.length))};
 const ok=t=>S.diet==='n'||t==='v'||(S.diet==='e'&&t==='e');
@@ -211,7 +211,7 @@ const CFG=Object.assign({supabaseUrl:'',supabaseKey:'',allowGuest:false},window.
 const SBON=()=>!!(CFG.supabaseUrl&&CFG.supabaseKey);
 let SB=null,SBM='in',SBF={em:'',pw:''},SBMSG='',SBBUSY=0;
 async function sbFetch(path,opt,tok){opt=opt||{};
- const r=await fetch(CFG.supabaseUrl+path,{...opt,headers:{apikey:CFG.supabaseKey,Authorization:'Bearer '+(tok||CFG.supabaseKey),'Content-Type':'application/json',...(opt.headers||{})}});
+ const r=await fetch(CFG.supabaseUrl+path,{...opt,headers:{apikey:CFG.supabaseKey,...(tok?{Authorization:'Bearer '+tok}:{}),'Content-Type':'application/json',...(opt.headers||{})}});
  let j=null;try{j=await r.json()}catch(e){}
  if(!r.ok)throw Object.assign(new Error((j&&(j.msg||j.error_description||j.message||j.error))||'Request failed'),{status:r.status});return j}
 function sbSave(j){SB=j&&j.access_token?{access_token:j.access_token,refresh_token:j.refresh_token,exp:Date.now()+(j.expires_in||3600)*1000-60000,user:{id:j.user.id,email:j.user.email}}:null;
