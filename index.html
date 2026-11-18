@@ -37,6 +37,15 @@ button.p{background:var(--pr);border-color:var(--pr);color:#fff;font-weight:600}
 .opt{padding:10px 0;border-top:1px solid #e6e7ea}.opt .a{display:flex;justify-content:space-between;align-items:center;margin-top:6px}
 .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}.chip{border-radius:16px;padding:6px 11px;font-size:13px}
 .bk{border:0;background:none;color:var(--pr);padding:0;margin-bottom:6px;font-weight:600}
+label.f.chk{display:flex;gap:8px;align-items:flex-start;font-size:12px}
+label.f.chk input{width:auto;margin:2px 0 0}
+.tipline{display:flex;align-items:center;gap:8px;margin:8px 0 10px;font-size:13px}
+.tip{position:relative;display:inline-block}
+.ti{border:0;background:var(--soft);border-radius:50%;width:26px;height:26px;padding:0;font-size:15px;color:var(--pr)}
+.tp{display:none;position:absolute;left:0;top:32px;z-index:20;width:min(86vw,320px);background:#fff;border:1px solid var(--bd);border-radius:12px;padding:12px;box-shadow:0 8px 24px rgba(0,0,0,.18);font-size:13px;line-height:1.45}
+.tp ol{margin:6px 0 6px;padding-left:18px}.tp a{color:var(--pr);font-weight:600}
+.tip.open .tp,.tip:focus-within .tp{display:block}
+@media(hover:hover){.tip:hover .tp{display:block}}
 a.btn{display:block;text-align:center;text-decoration:none;padding:12px;border-radius:10px;background:var(--pr);color:#fff;font-weight:600}
 nav{position:fixed;left:0;right:0;top:0;z-index:5;display:flex;background:#fff;border-bottom:1px solid var(--bd);padding:calc(6px + env(safe-area-inset-top,0px)) 8px 6px}
 nav button{flex:1;border:0;background:none;color:var(--mu);font-size:12px;padding:6px}nav button.on{color:var(--pr);font-weight:700}
@@ -119,7 +128,7 @@ function meal(){
  if(m==='f')h+=`<section class="card"><h2>Add a fruit</h2><div class="chips">${FR.map((x,i)=>`<button class="chip" data-a="addf" data-i="${i}">+ ${x[0]}</button>`).join('')}</div></section>`;
  else{
   const c=combos(m),opts=[...(AI[m]||[]),...c.list];CUR=opts;
-  h+=`<section class="card"><div class="sg" style="margin:0"><div class="t"><b>Suggestions</b><span><button data-a="more">↻ More</button> `+(sample?`<button class="p" data-a="ai" ${AIS[m]==='...'?'disabled':''}>${AIS[m]==='...'?'Thinking…':'✨ Ask Claude'}</button>`:'')+`</span></div>`+
+  h+=`<section class="card"><div class="sg" style="margin:0"><div class="t"><b>Suggestions</b><span><button data-a="more">↻ More</button> `+(sample?`<button class="p" data-a="ai" ${AIS[m]==='...'?'disabled':''}>${AIS[m]==='...'?'Thinking…':'✨ Ask AI'}</button>`:'')+`</span></div>`+
    (c.list.length||AI[m]?`<small>Aiming for about P ${ki(c.rp)} g · C ${ki(c.rc)} g more. Adjust the quantity, then add.</small>`:`<small>You’re on target for this meal. Nice.</small>`);
   opts.forEach((o,i)=>{o.key=o.items.map(x=>x.n).join('+');const q=OQ[o.key]||1,sm=k=>o.items.reduce((s,x)=>s+x[k]*q,0);
    h+=`<div class="opt"><b>${o.ai?'✨ ':''}${esc(o.items.map(x=>x.n).join(' + '))}</b><small>P ${f(sm('p'))} g · C ${f(sm('c'))} g · ${ki(sm('k'))} kcal</small><div class="a">${stp('o',i,q)}<button class="p" data-a="add" data-i="${i}">+ Add</button></div></div>`});
@@ -132,7 +141,7 @@ function meal(){
  <datalist id="ul"><option>roti</option><option>cup</option><option>bowl</option><option>katori</option><option>plate</option><option>piece</option><option>glass</option><option>g</option><option>tbsp</option></datalist>
  <small style="margin-bottom:6px">${CF.mode==='g'?'Values are per 100 g. Enter the weight you ate above.':'Values are per 1 unit, so edit them if yours differs.'}</small>
  <div class="g3"><label class="f">Protein (g) per ${CF.mode==='g'?'100 g':'unit'}<input id="cp" type="number" min="0" inputmode="decimal" value="${CF.p}"></label><label class="f">Carbs (g) per ${CF.mode==='g'?'100 g':'unit'}<input id="cc" type="number" min="0" inputmode="decimal" value="${CF.c}"></label><label class="f">kcal per ${CF.mode==='g'?'100 g':'unit'}<input id="ck" type="number" min="0" inputmode="decimal" value="${CF.k}" placeholder="auto"></label></div>
- <div class="sg" style="margin:0 0 10px"><b id="pv" style="font-weight:600">${pv()}</b></div>${sample?`<button style="width:100%;margin-bottom:8px" data-a="est" ${EST==='...'?'disabled':''}>${EST==='...'?'Estimating…':'✨ Estimate with Claude'}</button>`:''}${EST&&EST!=='...'?`<small style="margin-bottom:8px">${esc(EST)}</small>`:''}<button class="p" style="width:100%" data-a="cust">Add to ${MN[m]}</button></section>`;
+ <div class="sg" style="margin:0 0 10px"><b id="pv" style="font-weight:600">${pv()}</b></div>${sample?`<button style="width:100%;margin-bottom:8px" data-a="est" ${EST==='...'?'disabled':''}>${EST==='...'?'Estimating…':'✨ Estimate with AI'}</button>`:''}${EST&&EST!=='...'?`<small style="margin-bottom:8px">${esc(EST)}</small>`:''}<button class="p" style="width:100%" data-a="cust">Add to ${MN[m]}</button></section>`;
  return h;
 }
 function health(){
@@ -165,7 +174,7 @@ async function ask(){
  try{const v=await sample.json(q);
   const arr=(Array.isArray(v)?v:(v&&v.options)||[]).slice(0,3).filter(o=>o&&o.name).map(o=>({ai:1,items:[{n:String(o.name).slice(0,100),u:'serving',p:f(+o.p||0),c:f(+o.c||0),k:ki(+o.k||0)}]}));
   AI[m]=arr;AIS[m]=arr.length?'AI estimates are approximate.':'No ideas came back. Try again.';
- }catch(e){AIS[m]=e&&e.code==='badkey'?'Your Claude API key was rejected. Check it on the Targets tab.':e&&e.code==='limit'?'Claude is rate limiting requests or your usage limit was reached. Try again later.':e&&e.code==='not_granted'?'Permission to ask Claude was declined.':'Couldn’t reach Claude. Try again in a moment.'}
+ }catch(e){AIS[m]=e&&e.code==='badkey'?'Your AI key was rejected. Check it on the Targets tab.':e&&e.code==='limit'?'The AI service is rate limiting requests or your usage limit was reached. Try again later.':e&&e.code==='not_granted'?'Permission to ask Claude was declined.':'Couldn’t reach the AI service. Try again in a moment.'}
  render();
 }
 const shift=n=>{const d=new Date(S.date+'T00:00');d.setDate(d.getDate()+n);S.date=d.toLocaleDateString('en-CA')};
@@ -197,6 +206,7 @@ document.addEventListener('click',e=>{
  else if(a==='sbgo'){sbGo();return}
  else if(a==='sbm'){SBM=b.dataset.v;SBMSG=''}
  else if(a==='sbout'){sbOut();return}
+ else if(a==='tip'){b.parentNode.classList.toggle('open');return}
  else if(a==='aikon'){aiConnect();return}
  else if(a==='aikoff'){AIK='';try{sessionStorage.removeItem('nt2key');localStorage.removeItem('nt2key')}catch(e){}refreshAI()}
  else if(a==='mode'){CF.mode=b.dataset.v;CF.q=CF.mode==='g'?'':1;CF.warned=0;EST='';if(CM.some(z=>z[0].toLowerCase()===CF.n.trim().toLowerCase()))autofill();else{CF.p='';CF.c='';CF.k='';if(CF.mode==='n'&&CF.u==='g')CF.u=''}}
@@ -234,9 +244,17 @@ function mkAI(){return{json:async q=>{const t=await sbTok();let r;
  if(!r.ok)throw new Error('ai '+r.status);
  return (await r.json()).result}}}
 const hasRT=()=>!!(window.claude&&claude.use);
-let AIK='',AIKF='',AIKMSG='';
-try{AIK=sessionStorage.getItem('nt2key')||localStorage.getItem('nt2key')||''}catch(e){}
-function mkKeyAI(){return{json:async q=>{let r;
+let AIK='',AIKF='',AIKMSG='',AIP='gemini',AICK=false,AIRM=false;
+try{AIK=sessionStorage.getItem('nt2key')||localStorage.getItem('nt2key')||'';AIP=sessionStorage.getItem('nt2prov')||localStorage.getItem('nt2prov')||'gemini'}catch(e){}
+async function gemJson(q){let r;
+ try{r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/'+(CFG.geminiModel||'gemini-flash-latest')+':generateContent',{method:'POST',headers:{'x-goog-api-key':AIK,'content-type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:q}]}],generationConfig:{maxOutputTokens:2000,temperature:.4,responseMimeType:'application/json'}})})}catch(e){throw new Error('network')}
+ if(r.status===401||r.status===403)throw Object.assign(new Error('key'),{code:'badkey'});
+ if(r.status===400){let j=null;try{j=await r.json()}catch(e){}if(/api key|API_KEY/i.test(JSON.stringify(j||'')))throw Object.assign(new Error('key'),{code:'badkey'});throw new Error('ai 400')}
+ if(r.status===429)throw Object.assign(new Error('limit'),{code:'limit'});
+ if(!r.ok)throw new Error('ai '+r.status);
+ const d=await r.json(),parts=(((d.candidates||[])[0]||{}).content||{}).parts||[],t=parts.map(p=>p.text||'').join(''),m=t.match(/[\[{][\s\S]*[\]}]/);
+ return JSON.parse(m?m[0]:t)}
+function mkKeyAI(){return{json:async q=>{if(AIP==='gemini')return gemJson(q);let r;
  try{r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'x-api-key':AIK,'anthropic-version':'2023-06-01','content-type':'application/json','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:CFG.model||'claude-sonnet-5-5',max_tokens:900,messages:[{role:'user',content:q}]})})}catch(e){throw new Error('network')}
  if(r.status===401||r.status===403)throw Object.assign(new Error('key'),{code:'badkey'});
  if(r.status===429)throw Object.assign(new Error('limit'),{code:'limit'});
@@ -245,16 +263,20 @@ function mkKeyAI(){return{json:async q=>{let r;
  return JSON.parse(m?m[0]:t)}}}
 function refreshAI(){if(hasRT())return;sample=AIK?mkKeyAI():(CFG.aiUrl&&SB?mkAI():null)}
 async function aiConnect(){
- const k=AIKF.trim(),rem=!!($('#aikr')&&$('#aikr').checked);AIKMSG='';
- if(!/^sk-ant-\S{20,}$/.test(k)){AIKMSG='That doesn’t look like a Claude API key (it starts with sk-ant-).';render();return}
+ const k=AIKF.trim(),g=AIP==='gemini';AIKMSG='';
+ if(!(g?/^AIza[\w-]{20,}$/:/^sk-ant-\S{20,}$/).test(k)){AIKMSG=g?'That doesn’t look like a Gemini API key (it starts with AIza).':'That doesn’t look like a Claude API key (it starts with sk-ant-).';render();return}
+ if(g&&!AICK){AIKMSG='Please tick the box to confirm you understand how Google’s free tier uses data.';render();return}
  AIK=k;AIKMSG='Checking your key…';render();
  try{await mkKeyAI().json('Reply with ONLY this JSON: {"ok":true}');
-  try{localStorage.removeItem('nt2key');sessionStorage.removeItem('nt2key');(rem?localStorage:sessionStorage).setItem('nt2key',k)}catch(e){}
+  try{for(const x of[localStorage,sessionStorage]){x.removeItem('nt2key');x.removeItem('nt2prov')}const x=AIRM?localStorage:sessionStorage;x.setItem('nt2key',k);x.setItem('nt2prov',AIP)}catch(e){}
   AIKMSG='';AIKF='';refreshAI()}
- catch(e){AIK='';AIKMSG=e.code==='badkey'?'Claude rejected that key. Check it and try again.':e.code==='limit'?'The key looks valid but is rate limited right now. Try again shortly.':'Couldn’t reach Claude to check the key. Check your connection.'}
+ catch(e){AIK='';AIKMSG=e.code==='badkey'?'That key was rejected. Check it and try again.':e.code==='limit'?'The key looks valid but is rate limited right now. Try again shortly.':'Couldn’t reach the AI service to check the key. Check your connection.'}
  render()}
-function aiCard(){if(hasRT())return '';
- return `<section class="card"><h2>AI features (optional)</h2>${AIK?`<b>Claude connected</b><small>AI meal ideas and the AI health summary are on. Your key is kept ${(()=>{try{return localStorage.getItem('nt2key')?'on this device':'for this browser session'}catch(e){return 'in this browser'}})()}.</small><button style="margin-top:8px" data-a="aikoff">Disconnect</button>`:`<small>The tracker works fully without this. To turn on AI meal ideas and the AI health summary, connect your own Claude API key. Usage is billed to your own Anthropic account, not to this site.</small><label class="f" style="margin-top:10px">Claude API key<input id="aik" type="password" autocomplete="off" placeholder="sk-ant-..." value="${esc(AIKF)}"></label><label class="f" style="display:flex;gap:8px;align-items:center"><input id="aikr" type="checkbox" style="width:auto;margin:0"> Remember on this device</label><button class="p" style="width:100%" data-a="aikon">Connect Claude</button>${AIKMSG?`<small style="margin-top:6px;color:var(--tx)">${esc(AIKMSG)}</small>`:''}<small style="margin-top:8px">Create a key at console.anthropic.com under API keys, and set a spend limit there. A claude.ai chat subscription can’t be used as a key. The key stays in this browser, is sent only to api.anthropic.com, and is never saved to your account.</small>`}</section>`}
+function aiCard(){if(hasRT())return '';const g=AIP==='gemini';
+ const where=(()=>{try{return localStorage.getItem('nt2key')?'on this device':'for this browser session'}catch(e){return 'in this browser'}})();
+ if(AIK)return `<section class="card"><h2>AI features (optional)</h2><b>AI connected (${g?'Gemini':'Claude'})</b><small>AI meal ideas and the AI health summary are on. Your key is kept ${where}.</small><button style="margin-top:8px" data-a="aikoff">Disconnect</button></section>`;
+ const steps=g?`<b>Get a free Gemini key (about 2 minutes)</b><ol><li>Open <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> and sign in with a Google account.</li><li>Tap <b>Create API key</b> (choose or create a project if asked).</li><li>Copy the key. It starts with <b>AIza</b>.</li><li>Paste it in the box below and tap <b>Connect</b>.</li></ol><small>No credit card is needed on the free tier. Free usage has daily limits.</small>`:`<b>Get a Claude API key</b><ol><li>Open <a href="https://console.anthropic.com" target="_blank" rel="noopener">console.anthropic.com</a> and sign in (this is separate from claude.ai).</li><li>Add a little credit under <b>Billing</b> and set a monthly spend limit.</li><li>Go to <b>Settings → API keys → Create key</b>.</li><li>Copy the key (it starts with <b>sk-ant-</b>), paste it below and tap <b>Connect</b>.</li></ol>`;
+ return `<section class="card"><h2>AI features (optional)</h2><small>The tracker works fully without this. Connect your own AI key to turn on AI meal ideas and the AI health summary.</small><label class="f" style="margin-top:10px">AI provider<select id="aip"><option value="gemini" ${g?'selected':''}>Google Gemini (free tier)</option><option value="claude" ${g?'':'selected'}>Claude (paid, Anthropic)</option></select></label><div class="tipline"><span>Get your ${g?'free ':''}key</span><span class="tip"><button class="ti" data-a="tip" aria-label="How to get a key">ⓘ</button><div class="tp">${steps}</div></span></div><label class="f">${g?'Gemini':'Claude'} API key<input id="aik" type="password" autocomplete="off" placeholder="${g?'AIza...':'sk-ant-...'}" value="${esc(AIKF)}"></label>${g?`<label class="f chk"><input id="aic" type="checkbox" ${AICK?'checked':''}><span>I understand that on Google’s free tier, what this app sends (my meals, water, steps, weight and BP for the day) may be used by Google to improve its products.</span></label>`:''}<label class="f chk"><input id="aikr" type="checkbox" ${AIRM?'checked':''}><span>Remember on this device</span></label><button class="p" style="width:100%" data-a="aikon">Connect</button>${AIKMSG?`<small style="margin-top:6px;color:var(--tx)">${esc(AIKMSG)}</small>`:''}<small style="margin-top:8px">The key stays in this browser, is sent only to ${g?'Google':'Anthropic'}, and is never saved to your account.${g?'':' A claude.ai chat subscription can’t be used as a key.'}</small></section>`}
 async function adopt(id,name,ref){cloud={ref};ACC.name=name;
  const snap=await ref.get(),dflt={tp:100,tc:250,tk:2000,diet:'v',pref:''};
  if(S.uid&&S.uid!==id)S=Object.assign({},dflt,{date:td(),days:{}});
@@ -334,7 +356,7 @@ async function aiReport(){
  const q=`You are a careful, friendly Indian dietitian. Write a short health status summary for one day. This is general wellness guidance, not medical advice, and you must not diagnose. Data: ${JSON.stringify({date:k,targets:{protein_g:S.tp,carbs_g:S.tc,kcal:S.tk,water_ml:WG(),steps:SG()},eaten:{protein_g:ki(r.x.p),carbs_g:ki(r.x.c),kcal:ki(r.x.k),foods:r.x.foods,fruit_items:r.x.fr},water_ml:r.x.wa,steps:r.x.st,weight_kg:r.x.w||null,bp:r.x.sys?r.x.sys+'/'+r.x.dia:null,last7days_avg:wk.avg})}. If blood pressure is 180/120 or higher, tell them to seek urgent medical care. Suggest Indian foods. Reply with ONLY JSON: {"status":"one short line","summary":"3-4 sentences","good":["what went well"],"focus":["3 specific actions for tomorrow"],"watch":["anything worth a chat with a doctor or dietitian, or empty"]}`;
  try{const v=await sample.json(q),L=z=>(Array.isArray(z)?z:[]).slice(0,4).map(t=>String(t).slice(0,200));
   AIR[k]={status:String(v.status||'').slice(0,160),summary:String(v.summary||'').slice(0,800),good:L(v.good),focus:L(v.focus),watch:L(v.watch)};AIRS=''}
- catch(e){AIRS=e&&e.code==='badkey'?'Your Claude API key was rejected. Check it on the Targets tab.':e&&e.code==='limit'?'Claude is rate limiting requests or your usage limit was reached. Try again later.':e&&e.code==='not_granted'?'Permission to ask Claude was declined.':'Couldn’t reach Claude. The report above still works without it.'}
+ catch(e){AIRS=e&&e.code==='badkey'?'Your AI key was rejected. Check it on the Targets tab.':e&&e.code==='limit'?'The AI service is rate limiting requests or your usage limit was reached. Try again later.':e&&e.code==='not_granted'?'Permission to ask Claude was declined.':'Couldn’t reach the AI service. The report above still works without it.'}
  render()}
 function waterCard(){const d=D(),w=+d.wa||0,g=WG();
  return `<section class="card"><div class="row" style="margin:0"><div><b>💧 Water</b><span>${w} / ${g} ml</span></div>${bar(w,w,g,'#3b9be8')}</div><div class="chips"><button class="chip" data-a="wat" data-v="250">+ Glass (250 ml)</button><button class="chip" data-a="wat" data-v="500">+ 500 ml</button><button class="chip" data-a="wat" data-v="1000">+ 1 L</button><button class="chip" data-a="wat" data-v="-250">Undo glass</button></div><div class="dn" style="margin:10px 0 0"><input id="wc" type="number" min="1" inputmode="numeric" placeholder="Custom ml"><button data-a="watc">Add</button></div></section>`}
@@ -348,7 +370,7 @@ function report(){
   h+=`<section class="card"><div style="display:flex;justify-content:space-between;align-items:center"><div><h2 style="margin:0">${fd(k)}</h2><small>${lab}</small></div><div style="font-size:34px;font-weight:700;color:${col}">${r.score}</div></div>`+r.F.map(z=>`<div class="row" style="margin:12px 0 0"><div><b>${z.name}</b><span>${z.msg}</span></div>${bar(z.score,z.score,100,z.st==='good'?'var(--pr)':'var(--ca)')}<small>${esc(z.act)}</small></div>`).join('')+`</section>`}
  h+=`<section class="card"><h2>Vitals</h2>`+(x.w?`<div class="row"><b>Weight</b> ${x.w} kg${pw?` <small style="display:inline">(${x.w-pw.w>0?'+':''}${f(x.w-pw.w)} kg since ${fd(pw.k)})</small>`:''}</div>`:'<small>No weight logged for this day.</small>')+(bp?`<div class="row" style="margin-top:8px"><b>Blood pressure</b> ${x.sys}/${x.dia} mmHg · ${bp.t}<small>${bp.n} One reading is not a diagnosis.</small></div>`:'<small>No BP logged for this day.</small>')+`</section>`;
  h+=`<section class="card"><h2>Focus for tomorrow</h2>${ul(r.focus)}</section>`;
- h+=`<section class="card"><h2>AI health summary</h2>`+(ai?`<b>${esc(ai.status)}</b><p style="margin:6px 0">${esc(ai.summary)}</p>${ai.good.length?'<small>Going well</small>'+ul(ai.good):''}${ai.focus.length?'<small>Focus tomorrow</small>'+ul(ai.focus):''}${ai.watch.length?'<small>Worth a chat with a doctor or dietitian</small>'+ul(ai.watch):''}`:'<small>A written summary of the day’s food, water, steps and vitals, with suggestions for tomorrow.</small>')+(sample?`<button class="p" style="width:100%;margin-top:10px" data-a="airep" ${AIRS==='...'?'disabled':''}>${AIRS==='...'?'Thinking…':ai?'↻ Refresh summary':'✨ Generate AI summary'}</button>`:'<small style="margin-top:8px">Connect your Claude API key on the Targets tab to turn on the AI summary.</small>')+(AIRS&&AIRS!=='...'?`<small style="margin-top:6px">${esc(AIRS)}</small>`:'')+`</section>`;
+ h+=`<section class="card"><h2>AI health summary</h2>`+(ai?`<b>${esc(ai.status)}</b><p style="margin:6px 0">${esc(ai.summary)}</p>${ai.good.length?'<small>Going well</small>'+ul(ai.good):''}${ai.focus.length?'<small>Focus tomorrow</small>'+ul(ai.focus):''}${ai.watch.length?'<small>Worth a chat with a doctor or dietitian</small>'+ul(ai.watch):''}`:'<small>A written summary of the day’s food, water, steps and vitals, with suggestions for tomorrow.</small>')+(sample?`<button class="p" style="width:100%;margin-top:10px" data-a="airep" ${AIRS==='...'?'disabled':''}>${AIRS==='...'?'Thinking…':ai?'↻ Refresh summary':'✨ Generate AI summary'}</button>`:'<small style="margin-top:8px">Connect a free AI key on the Targets tab to turn on the AI summary.</small>')+(AIRS&&AIRS!=='...'?`<small style="margin-top:6px">${esc(AIRS)}</small>`:'')+`</section>`;
  h+=`<section class="card"><h2>Last 7 days</h2><div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px"><tr style="color:var(--mu);text-align:left"><th>Day</th><th>kcal</th><th>Protein</th><th>Water</th><th>Steps</th></tr>`+wk.days.map(z=>`<tr style="border-top:1px solid var(--bd)"><td>${new Date(z.d+'T00:00').toLocaleDateString('en-IN',{weekday:'short',day:'numeric'})}</td><td>${ki(z.k)}</td><td>${ki(z.p)} g</td><td>${z.wa} ml</td><td>${z.st}</td></tr>`).join('')+`</table></div><small style="margin-top:6px">Average on logged days: ${wk.avg.kcal} kcal, ${wk.avg.protein_g} g protein, ${wk.avg.water_ml} ml water, ${wk.avg.steps} steps.</small></section><small>General wellness information only, not medical advice. Talk to a doctor about health concerns or before changing your diet significantly.</small>`;
  return h}
 refreshAI();
@@ -369,6 +391,9 @@ document.addEventListener('change',e=>{
  else if(id==='tp'||id==='tc'||id==='tk')S[id]=Math.max(0,+t.value||0);
  else if(id==='twg'||id==='tsg')S[id==='twg'?'wg':'sg']=Math.max(0,+t.value||0);
  else if(id==='diet'){S.diet=t.value;AI={};OFF={}}
+ else if(id==='aip'){AIP=t.value;AIKF='';AIKMSG=''}
+ else if(id==='aic')AICK=t.checked;
+ else if(id==='aikr')AIRM=t.checked;
  else if(id==='pref')S.pref=t.value;
  else return;
  save();render();
