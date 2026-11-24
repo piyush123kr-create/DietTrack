@@ -46,6 +46,7 @@ label.f.chk input{width:auto;margin:2px 0 0}
 .tp ol{margin:6px 0 6px;padding-left:18px}.tp a{color:var(--pr);font-weight:600}
 .tip.open .tp,.tip:focus-within .tp{display:block}
 @media(hover:hover){.tip:hover .tp{display:block}}
+.gname{background:rgba(22,163,127,.16);color:var(--pr);font-weight:800;padding:2px 9px;border-radius:7px;letter-spacing:.6px;font-size:14px}
 a.btn{display:block;text-align:center;text-decoration:none;padding:12px;border-radius:10px;background:var(--pr);color:#fff;font-weight:600}
 nav{position:fixed;left:0;right:0;top:0;z-index:5;display:flex;background:#fff;border-bottom:1px solid var(--bd);padding:calc(6px + env(safe-area-inset-top,0px)) 8px 6px}
 nav button{flex:1;border:0;background:none;color:var(--mu);font-size:12px;padding:6px}nav button.on{color:var(--pr);font-weight:700}
@@ -107,7 +108,7 @@ function strip(){
 }
 function home(){
  const d=D(),all=Object.values(d.m).flat();
- let h=`<h1>${fd(S.date)}</h1>${ACC.name?`<small style="margin:-4px 0 8px">Hi, ${esc(ACC.name)}</small>`:''}`+strip()+(FL?`<div class="sg" style="margin:0 0 12px"><b>✓ ${esc(FL)}</b></div>`:'')+`<section class="card"><h2>Daily progress</h2>`+
+ let h=`<h1>${fd(S.date)}</h1>${dispName()?`<div style="margin:-4px 0 10px">Hi, <mark class="gname">${esc(dispName().toUpperCase())}</mark></div>`:''}`+strip()+(FL?`<div class="sg" style="margin:0 0 12px"><b>✓ ${esc(FL)}</b></div>`:'')+`<section class="card"><h2>Daily progress</h2>`+
   row('Protein','g',tt(all,'p',1),tt(all,'p'),S.tp,'var(--pr)')+row('Carbs','g',tt(all,'c',1),tt(all,'c'),S.tc,'var(--ca)')+row('Calories','kcal',tt(all,'k',1),tt(all,'k'),S.tk,'var(--ka)')+
   `<small>Solid = ticked as eaten · faded = planned</small></section>${waterCard()}${stepCard()}<h2 class="sec">Meals</h2>`;
  ['b','l','s','d','f'].forEach(m=>{const a=d.m[m];
@@ -128,20 +129,20 @@ function meal(){
  if(m==='f')h+=`<section class="card"><h2>Add a fruit</h2><div class="chips">${FR.map((x,i)=>`<button class="chip" data-a="addf" data-i="${i}">+ ${x[0]}</button>`).join('')}</div></section>`;
  else{
   const c=combos(m),opts=[...(AI[m]||[]),...c.list];CUR=opts;
-  h+=`<section class="card"><div class="sg" style="margin:0"><div class="t"><b>Suggestions</b><span><button data-a="more">↻ More</button> `+(sample?`<button class="p" data-a="ai" ${AIS[m]==='...'?'disabled':''}>${AIS[m]==='...'?'Thinking…':'✨ Ask AI'}</button>`:'')+`</span></div>`+
+  h+=`<section class="card"><div class="sg" style="margin:0"><div class="t"><b>Suggestions</b><span><button data-a="more">↻ More</button> `+`<button class="p" data-a="ai" ${!sample||AIS[m]==='...'?'disabled':''}>${AIS[m]==='...'?'Thinking…':'✨ Ask AI'}</button>`+(sample?'':'<small style="width:100%;text-align:right">Connect AI on the Targets tab to turn this on.</small>')+`</span></div>`+
    (c.list.length||AI[m]?`<small>Aiming for about P ${ki(c.rp)} g · C ${ki(c.rc)} g more. Adjust the quantity, then add.</small>`:`<small>You’re on target for this meal. Nice.</small>`);
   opts.forEach((o,i)=>{o.key=o.items.map(x=>x.n).join('+');const q=OQ[o.key]||1,sm=k=>o.items.reduce((s,x)=>s+x[k]*q,0);
    h+=`<div class="opt"><b>${o.ai?'✨ ':''}${esc(o.items.map(x=>x.n).join(' + '))}</b><small>P ${f(sm('p'))} g · C ${f(sm('c'))} g · ${ki(sm('k'))} kcal</small><div class="a">${stp('o',i,q)}<button class="p" data-a="add" data-i="${i}">+ Add</button></div></div>`});
   if(AIS[m]&&AIS[m]!=='...')h+=`<small>${esc(AIS[m])}</small>`;
   h+='</div></section>';
  }
- h+=`<section class="card"><h2>Add your own food</h2><label class="f">Quick pick<select id="qk"><option value="">Choose a common food…</option>${CM.map((x,i)=>`<option value="${i}">${x[0]} (per ${x[1]})</option>`).join('')}</select></label>
+ h+=descCard()+`<section class="card"><h2>Add your own food</h2><label class="f">Quick pick<select id="qk"><option value="">Choose a common food…</option>${CM.map((x,i)=>`<option value="${i}">${x[0]} (per ${x[1]})</option>`).join('')}</select></label>
  <label class="f">Food name<input id="cn" list="fl" value="${esc(CF.n)}" placeholder="Type or pick, e.g. Dal tadka"></label><div class="g2" style="margin-bottom:10px"><button data-a="mode" data-v="n" class="${CF.mode==='g'?'':'p'}">Count (roti, cup…)</button><button data-a="mode" data-v="g" class="${CF.mode==='g'?'p':''}">Weight (grams)</button></div><datalist id="fl">${CM.map(x=>`<option value="${x[0]}">`).join('')}</datalist>
  <div class="g2"><label class="f">${CF.mode==='g'?'Weight eaten (g)':'Quantity'}<input id="cq" type="number" min="0.5" step="${CF.mode==='g'?'1':'0.5'}" inputmode="decimal" value="${CF.q}"></label><label class="f" style="${CF.mode==='g'?'display:none':''}">Unit<input id="cu" list="ul" value="${esc(CF.u)}" placeholder="roti, cup, bowl…"></label></div>
  <datalist id="ul"><option>roti</option><option>cup</option><option>bowl</option><option>katori</option><option>plate</option><option>piece</option><option>glass</option><option>g</option><option>tbsp</option></datalist>
  <small style="margin-bottom:6px">${CF.mode==='g'?'Values are per 100 g. Enter the weight you ate above.':'Values are per 1 unit, so edit them if yours differs.'}</small>
  <div class="g3"><label class="f">Protein (g) per ${CF.mode==='g'?'100 g':'unit'}<input id="cp" type="number" min="0" inputmode="decimal" value="${CF.p}"></label><label class="f">Carbs (g) per ${CF.mode==='g'?'100 g':'unit'}<input id="cc" type="number" min="0" inputmode="decimal" value="${CF.c}"></label><label class="f">kcal per ${CF.mode==='g'?'100 g':'unit'}<input id="ck" type="number" min="0" inputmode="decimal" value="${CF.k}" placeholder="auto"></label></div>
- <div class="sg" style="margin:0 0 10px"><b id="pv" style="font-weight:600">${pv()}</b></div>${sample?`<button style="width:100%;margin-bottom:8px" data-a="est" ${EST==='...'?'disabled':''}>${EST==='...'?'Estimating…':'✨ Estimate with AI'}</button>`:''}${EST&&EST!=='...'?`<small style="margin-bottom:8px">${esc(EST)}</small>`:''}<button class="p" style="width:100%" data-a="cust">Add to ${MN[m]}</button></section>`;
+ <div class="sg" style="margin:0 0 10px"><b id="pv" style="font-weight:600">${pv()}</b></div><button style="width:100%;margin-bottom:8px" data-a="est" ${!sample||EST==='...'?'disabled':''}>${EST==='...'?'Estimating…':'✨ Estimate with AI'}</button>${sample?'':'<small style="margin-bottom:8px">Connect AI on the Targets tab to turn this on.</small>'}${EST&&EST!=='...'?`<small style="margin-bottom:8px">${esc(EST)}</small>`:''}<button class="p" style="width:100%" data-a="cust">Add to ${MN[m]}</button></section>`;
  return h;
 }
 function health(){
@@ -154,7 +155,7 @@ function health(){
  return h+'</section>';
 }
 function targets(){
- return `<h1>Your targets</h1>${accCard()}${aiCard()}<section class="card"><div class="g3"><label class="f">Protein (g)<input id="tp" type="number" min="0" inputmode="numeric" value="${S.tp}"></label><label class="f">Carbs (g)<input id="tc" type="number" min="0" inputmode="numeric" value="${S.tc}"></label><label class="f">Calories<input id="tk" type="number" min="0" inputmode="numeric" value="${S.tk}"></label></div>
+ return `<h1>Your targets</h1>${accCard()}${nameCard()}${aiCard()}<section class="card"><div class="g3"><label class="f">Protein (g)<input id="tp" type="number" min="0" inputmode="numeric" value="${S.tp}"></label><label class="f">Carbs (g)<input id="tc" type="number" min="0" inputmode="numeric" value="${S.tc}"></label><label class="f">Calories<input id="tk" type="number" min="0" inputmode="numeric" value="${S.tk}"></label></div>
  <div class="g2"><label class="f">Water goal (ml)<input id="twg" type="number" min="0" inputmode="numeric" value="${S.wg||2500}"></label><label class="f">Steps goal<input id="tsg" type="number" min="0" inputmode="numeric" value="${S.sg||8000}"></label></div><label class="f">Food preference<select id="diet"><option value="v">Vegetarian</option><option value="e">Vegetarian + eggs</option><option value="n">Non-vegetarian</option></select></label>
  <label class="f">Notes for AI suggestions (optional)<input id="pref" value="${esc(S.pref)}" placeholder="e.g. no dairy, quick, high fibre"></label>
  <small>Targets split across the day: Breakfast 25% · Lunch 30% · Snacks 15% · Dinner 30%. Fruits and custom foods count toward the daily total.</small></section>
@@ -207,6 +208,9 @@ document.addEventListener('click',e=>{
  else if(a==='sbm'){SBM=b.dataset.v;SBMSG=''}
  else if(a==='sbout'){sbOut();return}
  else if(a==='tip'){b.parentNode.classList.toggle('open');return}
+ else if(a==='dsc'){aiDescribe();return}
+ else if(a==='aiweek'){aiWeek();return}
+ else if(a==='aitest'){aiTest();return}
  else if(a==='aikon'){aiConnect();return}
  else if(a==='aikoff'){AIK='';try{sessionStorage.removeItem('nt2key');localStorage.removeItem('nt2key')}catch(e){}refreshAI()}
  else if(a==='mode'){CF.mode=b.dataset.v;CF.q=CF.mode==='g'?'':1;CF.warned=0;EST='';if(CM.some(z=>z[0].toLowerCase()===CF.n.trim().toLowerCase()))autofill();else{CF.p='';CF.c='';CF.k='';if(CF.mode==='n'&&CF.u==='g')CF.u=''}}
@@ -220,13 +224,16 @@ document.addEventListener('click',e=>{
  save();render();
 });
 const CFG=Object.assign({supabaseUrl:'',supabaseKey:'',allowGuest:false,aiUrl:''},window.APP_CONFIG||{});
+function firstName(x){x=String(x||'').trim();if(!x)return '';if(x.includes('@'))x=x.split('@')[0];const t=x.split(/[\s._\-+0-9]+/).filter(Boolean)[0]||'';return t?t[0].toUpperCase()+t.slice(1).toLowerCase():''}
+const dispName=()=>S.name||firstName(ACC.name);
+function nameCard(){return `<section class="card"><h2>Your name</h2><label class="f" style="margin:0">First name (shown on the Today page)<input id="nm" value="${esc(S.name||'')}" placeholder="e.g. Piyush"></label></section>`}
 const SBON=()=>!!(CFG.supabaseUrl&&CFG.supabaseKey);
-let SB=null,SBM='in',SBF={em:'',pw:''},SBMSG='',SBBUSY=0;
+let SB=null,SBM='in',SBF={em:'',pw:'',fn:''},SBMSG='',SBBUSY=0;
 async function sbFetch(path,opt,tok){opt=opt||{};
  const r=await fetch(CFG.supabaseUrl+path,{...opt,headers:{apikey:CFG.supabaseKey,...(tok?{Authorization:'Bearer '+tok}:{}),'Content-Type':'application/json',...(opt.headers||{})}});
  let j=null;try{j=await r.json()}catch(e){}
  if(!r.ok)throw Object.assign(new Error((j&&(j.msg||j.error_description||j.message||j.error))||'Request failed'),{status:r.status});return j}
-function sbSave(j){SB=j&&j.access_token?{access_token:j.access_token,refresh_token:j.refresh_token,exp:Date.now()+(j.expires_in||3600)*1000-60000,user:{id:j.user.id,email:j.user.email}}:null;
+function sbSave(j){SB=j&&j.access_token?{access_token:j.access_token,refresh_token:j.refresh_token,exp:Date.now()+(j.expires_in||3600)*1000-60000,user:{id:j.user.id,email:j.user.email,fn:(j.user.user_metadata&&j.user.user_metadata.first_name)||''}}:null;
  try{SB?localStorage.setItem('nt2auth',JSON.stringify(SB)):localStorage.removeItem('nt2auth')}catch(e){}}
 async function sbTok(){if(!SB)throw new Error('Signed out');
  if(Date.now()>SB.exp)sbSave(await sbFetch('/auth/v1/token?grant_type=refresh_token',{method:'POST',body:JSON.stringify({refresh_token:SB.refresh_token})}));
@@ -234,8 +241,8 @@ async function sbTok(){if(!SB)throw new Error('Signed out');
 const sbRef={
  async get(){const t=await sbTok(),r=await sbFetch('/rest/v1/tracker_data?select=json&user_id=eq.'+SB.user.id,{},t);return{exists:!!(r&&r[0]),data:()=>({json:r&&r[0]&&r[0].json})}},
  async set(d){const t=await sbTok();await sbFetch('/rest/v1/tracker_data?on_conflict=user_id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({user_id:SB.user.id,json:d.json,updated_at:new Date().toISOString()})},t)}};
-async function sbAuth(kind,email,pw){
- if(kind==='up'){const j=await sbFetch('/auth/v1/signup',{method:'POST',body:JSON.stringify({email,password:pw})});if(j&&j.access_token){sbSave(j);return'in'}return'confirm'}
+async function sbAuth(kind,email,pw,fn){
+ if(kind==='up'){const j=await sbFetch('/auth/v1/signup',{method:'POST',body:JSON.stringify({email,password:pw,data:{first_name:fn||''}})});if(j&&j.access_token){sbSave(j);return'in'}return'confirm'}
  if(kind==='in'){sbSave(await sbFetch('/auth/v1/token?grant_type=password',{method:'POST',body:JSON.stringify({email,password:pw})}));return'in'}
  await sbFetch('/auth/v1/recover',{method:'POST',body:JSON.stringify({email})});return'reset'}
 function mkAI(){return{json:async q=>{const t=await sbTok();let r;
@@ -244,7 +251,7 @@ function mkAI(){return{json:async q=>{const t=await sbTok();let r;
  if(!r.ok)throw new Error('ai '+r.status);
  return (await r.json()).result}}}
 const hasRT=()=>!!(window.claude&&claude.use);
-let AIK='',AIKF='',AIKMSG='',AIP='gemini',AICK=false,AIRM=false;
+let AIK='',AIKF='',AIKMSG='',AIP='gemini',AICK=false,AIRM=true;
 try{AIK=sessionStorage.getItem('nt2key')||localStorage.getItem('nt2key')||'';AIP=sessionStorage.getItem('nt2prov')||localStorage.getItem('nt2prov')||'gemini'}catch(e){}
 let GMOD='';
 async function gemJson(q){
@@ -279,37 +286,67 @@ async function aiConnect(){
  render()}
 function aiCard(){if(hasRT())return '';const g=AIP==='gemini';
  const where=(()=>{try{return localStorage.getItem('nt2key')?'on this device':'for this browser session'}catch(e){return 'in this browser'}})();
- if(AIK)return `<section class="card"><h2>AI features (optional)</h2><b>AI connected (${g?'Gemini':'Claude'})</b><small>AI meal ideas and the AI health summary are on. Your key is kept ${where}.</small><button style="margin-top:8px" data-a="aikoff">Disconnect</button></section>`;
+ if(AIK)return `<section class="card"><h2>AI features (optional)</h2><b>AI connected (${g?'Gemini':'Claude'})</b><small>AI is on for meal ideas, describing a meal in words, custom-food estimates, the daily AI summary and the weekly review. Your key is kept ${where}.</small><div style="display:flex;gap:8px;margin-top:8px"><button data-a="aitest">Test connection</button><button data-a="aikoff">Disconnect</button></div>${AIKMSG?`<small style="margin-top:6px;color:var(--tx)">${esc(AIKMSG)}</small>`:''}</section>`;
  const steps=g?`<b>Get a free Gemini key (about 2 minutes)</b><ol><li>Open <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> and sign in with a Google account.</li><li>Tap <b>Create API key</b> (choose or create a project if asked).</li><li>Copy the key. New keys start with <b>AQ.</b> (older ones with <b>AIza</b>).</li><li>Paste it in the box below and tap <b>Connect</b>.</li></ol><small>No credit card is needed on the free tier. Free usage has daily limits.</small>`:`<b>Get a Claude API key</b><ol><li>Open <a href="https://console.anthropic.com" target="_blank" rel="noopener">console.anthropic.com</a> and sign in (this is separate from claude.ai).</li><li>Add a little credit under <b>Billing</b> and set a monthly spend limit.</li><li>Go to <b>Settings → API keys → Create key</b>.</li><li>Copy the key (it starts with <b>sk-ant-</b>), paste it below and tap <b>Connect</b>.</li></ol>`;
  return `<section class="card"><h2>AI features (optional)</h2><small>The tracker works fully without this. Connect your own AI key to turn on AI meal ideas and the AI health summary.</small><label class="f" style="margin-top:10px">AI provider<select id="aip"><option value="gemini" ${g?'selected':''}>Google Gemini (free tier)</option><option value="claude" ${g?'':'selected'}>Claude (paid, Anthropic)</option></select></label><div class="tipline"><span>Get your ${g?'free ':''}key</span><span class="tip"><button class="ti" data-a="tip" aria-label="How to get a key">ⓘ</button><div class="tp">${steps}</div></span></div><label class="f">${g?'Gemini':'Claude'} API key<input id="aik" type="password" autocomplete="off" placeholder="${g?'AQ.Ab...':'sk-ant-...'}" value="${esc(AIKF)}"></label>${g?`<label class="f chk"><input id="aic" type="checkbox" ${AICK?'checked':''}><span>I understand that on Google’s free tier, what this app sends (my meals, water, steps, weight and BP for the day) may be used by Google to improve its products.</span></label>`:''}<label class="f chk"><input id="aikr" type="checkbox" ${AIRM?'checked':''}><span>Remember on this device</span></label><button class="p" style="width:100%" data-a="aikon">Connect</button>${AIKMSG?`<small style="margin-top:6px;color:var(--tx)">${esc(AIKMSG)}</small>`:''}<small style="margin-top:8px">The key stays in this browser, is sent only to ${g?'Google':'Anthropic'}, and is never saved to your account.${g?'':' A claude.ai chat subscription can’t be used as a key.'}</small></section>`}
 async function adopt(id,name,ref){cloud={ref};ACC.name=name;
  const snap=await ref.get(),dflt={tp:100,tc:250,tk:2000,diet:'v',pref:''};
  if(S.uid&&S.uid!==id)S=Object.assign({},dflt,{date:td(),days:{}});
  if(snap.exists&&snap.data()&&snap.data().json){S=Object.assign({},dflt,JSON.parse(snap.data().json),{date:td()});S.days=S.days||{}}
- S.uid=id;ACC.s='cloud';save();refreshAI()}
+ if(!S.name)S.name=firstName((SB&&SB.user&&SB.user.fn)||name);S.uid=id;ACC.s='cloud';save();refreshAI()}
 async function sbGo(){
  const em=SBF.em.trim(),pw=SBF.pw;SBMSG='';
  if(!/^\S+@\S+\.\S+$/.test(em))SBMSG='Enter a valid email address.';
+ else if(SBM==='up'&&!SBF.fn.trim())SBMSG='Enter your first name.';
  else if(SBM!=='rs'&&pw.length<6)SBMSG='Password must be at least 6 characters.';
  if(SBMSG){render();return}
  SBBUSY=1;render();
- try{const r=await sbAuth(SBM,em,pw);
-  if(r==='in'){await adopt(SB.user.id,SB.user.email,sbRef);P='home';SBF.pw=''}
+ try{const r=await sbAuth(SBM,em,pw,SBF.fn.trim());
+  if(r==='in'){await adopt(SB.user.id,SB.user.email,sbRef);if(SBM==='up'&&SBF.fn.trim()){S.name=firstName(SBF.fn);save()}P='home';SBF.pw=''}
   else if(r==='confirm'){SBMSG='Account created. Check your email to confirm it, then sign in.';SBM='in'}
   else SBMSG='If that email has an account, a reset link is on its way.'}
  catch(e){SBMSG=/invalid login/i.test(e.message)?'Wrong email or password.':(e.status?e.message:'Couldn’t reach the server. Check your connection and try again.')}
  SBBUSY=0;render()}
 async function sbOut(){try{if(SB)await sbFetch('/auth/v1/logout',{method:'POST'},SB.access_token)}catch(e){}
  sbSave(null);cloud=null;ACC={s:'local',name:''};AIK='';try{sessionStorage.removeItem('nt2key');localStorage.removeItem('nt2key')}catch(e){}refreshAI();try{localStorage.removeItem('nt2')}catch(e){}
- S=load();S.days=S.days||{};SBF={em:'',pw:''};SBM='in';SBMSG='';P='login';render()}
+ S=load();S.days=S.days||{};SBF={em:'',pw:'',fn:''};SBM='in';SBMSG='';P='login';render()}
 async function sbBoot(){
  try{const raw=localStorage.getItem('nt2auth');if(raw){SB=JSON.parse(raw);await sbTok();await adopt(SB.user.id,SB.user.email,sbRef)}}
  catch(e){if(e.status===400||e.status===401||e.status===403)sbSave(null);ACC.s='local'}
  finally{if(P==='boot')P=ACC.s==='cloud'?'home':'login';render()}}
 function sbLogin(){const t={in:'Sign in',up:'Create account',rs:'Send reset link'}[SBM];
- return `<h1 style="margin-top:24px">${SBM==='up'?'Create your account':SBM==='rs'?'Reset password':'Welcome back'}</h1><p class="mu">Your meals, water, steps and health data stay private to your account and sync across your devices.</p><section class="card"><label class="f">Email<input id="em" type="email" autocomplete="email" value="${esc(SBF.em)}"></label>${SBM==='rs'?'':`<label class="f">Password<input id="pw" type="password" autocomplete="${SBM==='up'?'new-password':'current-password'}" value="${esc(SBF.pw)}" placeholder="At least 6 characters"></label>`}${SBMSG?`<small style="margin:0 0 10px;color:var(--tx)">${esc(SBMSG)}</small>`:''}<button class="p" style="width:100%" data-a="sbgo" ${SBBUSY?'disabled':''}>${SBBUSY?'Please wait…':t}</button><div style="display:flex;justify-content:space-between;margin-top:10px">${SBM==='in'?'<button class="bk" data-a="sbm" data-v="up">Create account</button><button class="bk" data-a="sbm" data-v="rs">Forgot password?</button>':'<button class="bk" data-a="sbm" data-v="in">Back to sign in</button>'}</div></section>${CFG.allowGuest?'<button style="width:100%" data-a="guest">Continue on this device only</button>':''}`}
+ return `<h1 style="margin-top:24px">${SBM==='up'?'Create your account':SBM==='rs'?'Reset password':'Welcome back'}</h1><p class="mu">Your meals, water, steps and health data stay private to your account and sync across your devices.</p><section class="card"><label class="f">Email<input id="em" type="email" autocomplete="email" value="${esc(SBF.em)}"></label>${SBM==='up'?`<label class="f">First name<input id="fn" autocomplete="given-name" value="${esc(SBF.fn)}"></label>`:''}${SBM==='rs'?'':`<label class="f">Password<input id="pw" type="password" autocomplete="${SBM==='up'?'new-password':'current-password'}" value="${esc(SBF.pw)}" placeholder="At least 6 characters"></label>`}${SBMSG?`<small style="margin:0 0 10px;color:var(--tx)">${esc(SBMSG)}</small>`:''}<button class="p" style="width:100%" data-a="sbgo" ${SBBUSY?'disabled':''}>${SBBUSY?'Please wait…':t}</button><div style="display:flex;justify-content:space-between;margin-top:10px">${SBM==='in'?'<button class="bk" data-a="sbm" data-v="up">Create account</button><button class="bk" data-a="sbm" data-v="rs">Forgot password?</button>':'<button class="bk" data-a="sbm" data-v="in">Back to sign in</button>'}</div></section>${CFG.allowGuest?'<button style="width:100%" data-a="guest">Continue on this device only</button>':''}`}
 if(window.claude&&claude.use&&!S.guest){P='boot';setTimeout(()=>{if(P==='boot'){P='login';render()}},5000)}
 else if(SBON()&&!(S.guest&&CFG.allowGuest)){P='boot';setTimeout(()=>{if(P==='boot'){P='login';render()}},8000)}
+let DSC='',DSCMSG='',DSCS='',AIW={},AIWS='';
+const aiErr=e=>e&&e.code==='badkey'?'Your AI key was rejected. Check it on the Targets tab.':e&&e.code==='limit'?'The AI service is rate limiting requests or your usage limit was reached. Try again later.':e&&e.code==='not_granted'?'Permission to ask Claude was declined.':'Couldn’t reach the AI service. Try again in a moment.';
+function descCard(){
+ return `<section class="card"><h2>Describe what you ate</h2><small>Write it in your own words, like “2 rotis, a bowl of dal and some rice”, and AI fills in the foods and nutrition.</small><label class="f" style="margin-top:8px"><textarea id="dsc" rows="2" maxlength="300" placeholder="e.g. 2 rotis with dal tadka and a glass of chaas" style="width:100%;padding:10px;border:1px solid #dcdce0;border-radius:10px;font:inherit;margin-top:4px">${esc(DSC)}</textarea></label><button class="p" style="width:100%" data-a="dsc" ${!sample||DSCS==='...'?'disabled':''}>${DSCS==='...'?'Working…':'✨ Add from description'}</button>${sample?'':'<small style="margin-top:6px">Connect AI on the Targets tab to turn this on.</small>'}${DSCMSG?`<small style="margin-top:6px;color:var(--tx)">${esc(DSCMSG)}</small>`:''}</section>`}
+async function aiDescribe(){
+ if(!sample)return;const m=M,t=DSC.trim();DSCMSG='';
+ if(t.length<3){DSCMSG='Type what you ate first.';render();return}
+ DSCS='...';render();
+ const q=`You are an Indian nutritionist. Convert this meal description into the foods eaten at ${MN[m]}: "${t.replace(/"/g,"'")}". Use typical home-style Indian portions. For each food give qty (the number of units eaten), unit (for example roti, katori, cup, glass, piece, g) and the protein g, carbs g and kcal for ONE unit. Reply with ONLY a JSON array like [{"name":"Roti","qty":2,"unit":"roti","p":3,"c":15,"k":85}].`;
+ try{const v=await sample.json(q),arr=Array.isArray(v)?v:(v&&v.items)||[];let n=0,skip=0;
+  for(const o of arr.slice(0,8)){const name=String((o&&o.name)||'').trim().slice(0,80),qty=+(o&&o.qty),p=+(o&&o.p),c=+(o&&o.c),k=+(o&&o.k);
+   if(!name||!(qty>0)||![p,c,k].every(Number.isFinite)||p<0||c<0||k<0||qty>50||p*qty>200||c*qty>400||k*qty>3000){skip++;continue}
+   D().m[m].push({id:uid(),n:name,u:String(o.unit||'serving').slice(0,20),q:Math.round(qty*4)/4||.25,p:f(p),c:f(c),k:ki(k),done:false});n++}
+  DSCMSG=n?`Added ${n} item${n>1?'s':''}. Check the amounts, then tick them when eaten.${skip?` Skipped ${skip} that looked unrealistic.`:''}`:'AI couldn’t turn that into foods. Try rewording it.';if(n)DSC=''}
+ catch(e){DSCMSG=aiErr(e)}
+ DSCS='';save();render()}
+async function aiWeek(){
+ if(!sample)return;const k=S.date,wk=week();AIWS='...';render();
+ const q=`You are a careful, friendly Indian dietitian. Review this person's last 7 days of eating, water and steps. This is general wellness guidance, not medical advice, and you must not diagnose. Data: ${JSON.stringify({targets:{protein_g:S.tp,carbs_g:S.tc,kcal:S.tk,water_ml:WG(),steps:SG()},days:wk.days.map(z=>({date:z.d,kcal:ki(z.k),protein_g:ki(z.p),carbs_g:ki(z.c),water_ml:z.wa,steps:z.st,foods_ticked:z.n,weight_kg:z.w||null}))})}. Days with nothing logged are missing data, not zero intake. Reply with ONLY JSON: {"status":"one short line","summary":"3-4 sentences","patterns":["2-3 patterns you notice"],"focus":["3 specific actions for next week using Indian foods"]}`;
+ try{const v=await sample.json(q),L=z=>(Array.isArray(z)?z:[]).slice(0,4).map(t=>String(t).slice(0,200));
+  AIW[k]={status:String(v.status||'').slice(0,160),summary:String(v.summary||'').slice(0,800),patterns:L(v.patterns),focus:L(v.focus)};AIWS=''}
+ catch(e){AIWS=aiErr(e)}
+ render()}
+function weekAI(){const a=AIW[S.date],ul=x=>'<ul style="margin:4px 0 8px;padding-left:18px">'+x.map(t=>`<li>${esc(t)}</li>`).join('')+'</ul>';
+ return `<section class="card"><h2>AI weekly review</h2>${a?`<b>${esc(a.status)}</b><p style="margin:6px 0">${esc(a.summary)}</p>${a.patterns.length?'<small>Patterns</small>'+ul(a.patterns):''}${a.focus.length?'<small>Focus next week</small>'+ul(a.focus):''}`:'<small>Spot patterns across your last 7 days and get a plan for next week.</small>'}<button class="p" style="width:100%;margin-top:10px" data-a="aiweek" ${!sample||AIWS==='...'?'disabled':''}>${AIWS==='...'?'Thinking…':a?'↻ Refresh review':'✨ Review my week'}</button>${sample?'':'<small style="margin-top:8px">Connect a free AI key on the Targets tab to turn this on.</small>'}${AIWS&&AIWS!=='...'?`<small style="margin-top:6px">${esc(AIWS)}</small>`:''}</section>`}
+async function aiTest(){if(!AIK)return;AIKMSG='Testing…';render();
+ try{await mkKeyAI().json('Reply with ONLY this JSON: {"ok":true}');AIKMSG=AIP==='gemini'?`Working ✓ (Gemini model: ${GMOD||'default'})`:'Working ✓ (Claude)'}
+ catch(e){AIKMSG=e.authtype?'Google rejected this new-style (AQ.) key. Create a fresh key in a new project in Google AI Studio, then reconnect.':aiErr(e)}
+ render()}
 let AIR={},AIRS='',AUTO=null,AUTOM='';
 const WG=()=>S.wg||2500,SG=()=>S.sg||8000;
 const emptyDay=()=>({m:{b:[],l:[],s:[],d:[],f:[]}});
@@ -375,8 +412,8 @@ function report(){
   h+=`<section class="card"><div style="display:flex;justify-content:space-between;align-items:center"><div><h2 style="margin:0">${fd(k)}</h2><small>${lab}</small></div><div style="font-size:34px;font-weight:700;color:${col}">${r.score}</div></div>`+r.F.map(z=>`<div class="row" style="margin:12px 0 0"><div><b>${z.name}</b><span>${z.msg}</span></div>${bar(z.score,z.score,100,z.st==='good'?'var(--pr)':'var(--ca)')}<small>${esc(z.act)}</small></div>`).join('')+`</section>`}
  h+=`<section class="card"><h2>Vitals</h2>`+(x.w?`<div class="row"><b>Weight</b> ${x.w} kg${pw?` <small style="display:inline">(${x.w-pw.w>0?'+':''}${f(x.w-pw.w)} kg since ${fd(pw.k)})</small>`:''}</div>`:'<small>No weight logged for this day.</small>')+(bp?`<div class="row" style="margin-top:8px"><b>Blood pressure</b> ${x.sys}/${x.dia} mmHg · ${bp.t}<small>${bp.n} One reading is not a diagnosis.</small></div>`:'<small>No BP logged for this day.</small>')+`</section>`;
  h+=`<section class="card"><h2>Focus for tomorrow</h2>${ul(r.focus)}</section>`;
- h+=`<section class="card"><h2>AI health summary</h2>`+(ai?`<b>${esc(ai.status)}</b><p style="margin:6px 0">${esc(ai.summary)}</p>${ai.good.length?'<small>Going well</small>'+ul(ai.good):''}${ai.focus.length?'<small>Focus tomorrow</small>'+ul(ai.focus):''}${ai.watch.length?'<small>Worth a chat with a doctor or dietitian</small>'+ul(ai.watch):''}`:'<small>A written summary of the day’s food, water, steps and vitals, with suggestions for tomorrow.</small>')+(sample?`<button class="p" style="width:100%;margin-top:10px" data-a="airep" ${AIRS==='...'?'disabled':''}>${AIRS==='...'?'Thinking…':ai?'↻ Refresh summary':'✨ Generate AI summary'}</button>`:'<small style="margin-top:8px">Connect a free AI key on the Targets tab to turn on the AI summary.</small>')+(AIRS&&AIRS!=='...'?`<small style="margin-top:6px">${esc(AIRS)}</small>`:'')+`</section>`;
- h+=`<section class="card"><h2>Last 7 days</h2><div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px"><tr style="color:var(--mu);text-align:left"><th>Day</th><th>kcal</th><th>Protein</th><th>Water</th><th>Steps</th></tr>`+wk.days.map(z=>`<tr style="border-top:1px solid var(--bd)"><td>${new Date(z.d+'T00:00').toLocaleDateString('en-IN',{weekday:'short',day:'numeric'})}</td><td>${ki(z.k)}</td><td>${ki(z.p)} g</td><td>${z.wa} ml</td><td>${z.st}</td></tr>`).join('')+`</table></div><small style="margin-top:6px">Average on logged days: ${wk.avg.kcal} kcal, ${wk.avg.protein_g} g protein, ${wk.avg.water_ml} ml water, ${wk.avg.steps} steps.</small></section><small>General wellness information only, not medical advice. Talk to a doctor about health concerns or before changing your diet significantly.</small>`;
+ h+=`<section class="card"><h2>AI health summary</h2>`+(ai?`<b>${esc(ai.status)}</b><p style="margin:6px 0">${esc(ai.summary)}</p>${ai.good.length?'<small>Going well</small>'+ul(ai.good):''}${ai.focus.length?'<small>Focus tomorrow</small>'+ul(ai.focus):''}${ai.watch.length?'<small>Worth a chat with a doctor or dietitian</small>'+ul(ai.watch):''}`:'<small>A written summary of the day’s food, water, steps and vitals, with suggestions for tomorrow.</small>')+`<button class="p" style="width:100%;margin-top:10px" data-a="airep" ${!sample||AIRS==='...'?'disabled':''}>${AIRS==='...'?'Thinking…':ai?'↻ Refresh summary':'✨ Generate AI summary'}</button>`+(sample?'':'<small style="margin-top:8px">Connect a free AI key on the Targets tab to turn this on.</small>')+(AIRS&&AIRS!=='...'?`<small style="margin-top:6px">${esc(AIRS)}</small>`:'')+`</section>`;
+ h+=`<section class="card"><h2>Last 7 days</h2><div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px"><tr style="color:var(--mu);text-align:left"><th>Day</th><th>kcal</th><th>Protein</th><th>Water</th><th>Steps</th></tr>`+wk.days.map(z=>`<tr style="border-top:1px solid var(--bd)"><td>${new Date(z.d+'T00:00').toLocaleDateString('en-IN',{weekday:'short',day:'numeric'})}</td><td>${ki(z.k)}</td><td>${ki(z.p)} g</td><td>${z.wa} ml</td><td>${z.st}</td></tr>`).join('')+`</table></div><small style="margin-top:6px">Average on logged days: ${wk.avg.kcal} kcal, ${wk.avg.protein_g} g protein, ${wk.avg.water_ml} ml water, ${wk.avg.steps} steps.</small></section>${weekAI()}<small>General wellness information only, not medical advice. Talk to a doctor about health concerns or before changing your diet significantly.</small>`;
  return h}
 refreshAI();
 const MAP={cn:'n',cu:'u',cq:'q',cp:'p',cc:'c',ck:'k'};
@@ -388,7 +425,7 @@ const pv=()=>{const{q,p,c,k}=cv();return `Total for ${CF.mode==='g'?q+' g':q+' �
 function autofill(){const x=CM.find(z=>z[0].toLowerCase()===CF.n.trim().toLowerCase());if(!x)return;const g=CF.mode==='g',w=g?100/(GPU[x[0]]||100):1;Object.assign(CF,{u:g?'g':x[1],p:f(x[2]*w),c:f(x[3]*w),k:ki(x[4]*w)});if(g&&CF.q==='')CF.q=GPU[x[0]]||'';[['#cu',CF.u],['#cq',CF.q],['#cp',CF.p],['#cc',CF.c],['#ck',CF.k]].forEach(([s,v])=>{const e=$(s);if(e)e.value=v});EST=''}
 async function est(){if(!sample||!CF.n.trim())return;EST='...';render();
  try{const v=await sample.json(`Estimate nutrition for ${CF.mode==='g'?'100 g':'1 '+(CF.u||'serving')} of "${CF.n}" (Indian home-style). Reply with ONLY JSON: {"p":grams of protein,"c":grams of carbs,"k":kcal}`);CF.p=f(+v.p||0);CF.c=f(+v.c||0);CF.k=ki(+v.k||0);EST='Estimated by AI. Edit if needed.'}catch(e){EST='Couldn’t estimate. Try again.'}render()}
-document.addEventListener('input',e=>{if(e.target.id==='em'||e.target.id==='pw'){SBF[e.target.id]=e.target.value;return}if(e.target.id==='aik'){AIKF=e.target.value;return}const k=MAP[e.target.id];if(!k)return;CF[k]=e.target.value;CF.warned=0;if(k==='n')autofill();const v=$('#pv');if(v)v.textContent=pv()});
+document.addEventListener('input',e=>{if(e.target.id==='em'||e.target.id==='pw'||e.target.id==='fn'){SBF[e.target.id]=e.target.value;return}if(e.target.id==='aik'){AIKF=e.target.value;return}if(e.target.id==='dsc'){DSC=e.target.value;return}const k=MAP[e.target.id];if(!k)return;CF[k]=e.target.value;CF.warned=0;if(k==='n')autofill();const v=$('#pv');if(v)v.textContent=pv()});
 document.addEventListener('change',e=>{
  const t=e.target,id=t.id;
  if(id==='dt'&&t.value)S.date=t.value;
@@ -396,6 +433,7 @@ document.addEventListener('change',e=>{
  else if(id==='tp'||id==='tc'||id==='tk')S[id]=Math.max(0,+t.value||0);
  else if(id==='twg'||id==='tsg')S[id==='twg'?'wg':'sg']=Math.max(0,+t.value||0);
  else if(id==='diet'){S.diet=t.value;AI={};OFF={}}
+ else if(id==='nm')S.name=firstName(t.value);
  else if(id==='aip'){AIP=t.value;AIKF='';AIKMSG=''}
  else if(id==='aic')AICK=t.checked;
  else if(id==='aikr')AIRM=t.checked;
